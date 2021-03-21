@@ -43,7 +43,7 @@ jobs:
       - name: Upload artifacts
         uses: actions/upload-artifact@v2
         with:
-          name: stubs-${{ matrix.os }}
+          name: stubs
           path: "stubs/${{ matrix.output }}"
 
   build_arm:
@@ -90,7 +90,7 @@ jobs:
       - name: Upload artifacts
         uses: actions/upload-artifact@v2
         with:
-          name: stubs-${{ matrix.output }}
+          name: stubs
           path: "stubs/${{ matrix.output }}"
 
   job_upload:
