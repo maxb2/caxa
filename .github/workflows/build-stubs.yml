@@ -37,7 +37,7 @@ jobs:
         run: |
           cd stubs/
           go build -o ${{ matrix.output }} stub.go
-          echo >> ${{ matrix.output }}
+          echo '' >> ${{ matrix.output }}
           echo '### CAXA ###' >> ${{ matrix.output }}
 
       - name: Upload artifacts
