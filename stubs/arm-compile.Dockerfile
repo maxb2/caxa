@@ -1,4 +1,6 @@
-FROM golang
+ARG GO_VERSION='1.16'
+
+FROM golang:$GO_VERSION
 
 WORKDIR /usr/src/build
 

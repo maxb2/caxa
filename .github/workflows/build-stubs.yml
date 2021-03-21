@@ -29,6 +29,8 @@ jobs:
 
       - name: Setup Go
         uses: actions/setup-go@v2
+        with:
+          go-version: '~1.16.2'
 
       - name: Compile x64 binary
         id: compile
@@ -37,7 +39,6 @@ jobs:
           go build -o ${{ matrix.output }} stub.go
           echo >> ${{ matrix.output }}
           echo '### CAXA ###' >> ${{ matrix.output }}
-
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v2
