@@ -1,0 +1,176 @@
+name: Build Binaries
+
+on:
+  push:
+    branches: [master] # Run on master or tags
+    tags:
+      - "v*"
+
+jobs:
+  build_x64_native:
+    name: ${{ matrix.os }} Binaries
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      matrix:
+        os: [ubuntu, macos, windows]
+        include:
+          - os: ubuntu
+            runner: ubuntu-20.04
+            output: linux
+          - os: macos
+            runner: macos-latest
+            output: macos
+          - os: windows
+            runner: windows-latest
+            output: windows.exe
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Setup Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: '~1.16.2'
+
+      - name: Compile x64 binary
+        id: compile
+        run: |
+          cd stubs/
+          go build -o ${{ matrix.output }} stub.go
+          echo '' >> ${{ matrix.output }}
+          echo '### CAXA ###' >> ${{ matrix.output }}
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: stubs
+          path: "stubs/${{ matrix.output }}"
+
+  build_arm:
+    name: ${{ matrix.arch }} Binaries
+    runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        platform: [linux/arm/v7, linux/arm64/v8]
+        include:
+          - platform: linux/arm/v7
+            arch: armv7
+            output: linux-armv7
+          - platform: linux/arm64/v8
+            arch: arm64
+            output: linux-arm64
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up QEMU
+        id: qemu
+        uses: docker/setup-qemu-action@v1
+        with:
+          platforms: ${{ matrix.platform }}
+
+      - name: Available platforms
+        run: echo ${{ steps.qemu.outputs.platforms }}
+
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Build ${{ matrix.arch }}
+        run: |
+          cd stubs
+          docker buildx build -f arm-compile.Dockerfile \
+            --platform ${{ matrix.platform }} \
+            --build-arg OUTPUT=${{ matrix.output }} \
+            --load -t stub:${{ matrix.arch }} .
+          APP=$(docker run --rm -it -d stub:${{ matrix.arch }})
+          docker cp $APP:/usr/src/build/${{ matrix.output }} ./
+          docker kill $APP
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: stubs
+          path: "stubs/${{ matrix.output }}"
+
+  job_upload:
+    name: Upload Release Assets
+    needs: [build_x64_native, build_arm]
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Download Artifacts
+        uses: actions/download-artifact@v2
+        with:
+          path: .
+
+      - name: Create Release
+        if: startsWith( github.ref, 'refs/tags/' ) # Run on tags only.
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          draft: true
+          prerelease: false
+
+      # We have to upload assets individually using upload-release-asset@v1
+      # There isn't a matrix for steps.
+      - name: Upload Linux Release
+        if: startsWith( github.ref, 'refs/tags/' ) # Run on tags only.
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps
+          asset_path: ./stubs/linux
+          asset_name: linux
+          asset_content_type: application/zip
+
+      - name: Upload MacOS Release
+        if: startsWith( github.ref, 'refs/tags/' ) # Run on tags only.
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps
+          asset_path: ./stubs/macos
+          asset_name: macos
+          asset_content_type: application/zip
+
+      - name: Upload Windows Release
+        if: startsWith( github.ref, 'refs/tags/' ) # Run on tags only.
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps
+          asset_path: ./stubs/windows.exe
+          asset_name: windows.exe
+          asset_content_type: application/zip
+
+      - name: Upload Linux armv7 Release
+        if: startsWith( github.ref, 'refs/tags/' ) # Run on tags only.
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps
+          asset_path: ./stubs/linux-armv7
+          asset_name: linux-armv7
+          asset_content_type: application/zip
+
+      - name: Upload Linux arm64 Release
+        if: startsWith( github.ref, 'refs/tags/' ) # Run on tags only.
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps
+          asset_path: ./stubs/linux-arm64
+          asset_name: linux-arm64
+          asset_content_type: application/zip
