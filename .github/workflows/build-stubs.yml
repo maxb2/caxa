@@ -81,7 +81,8 @@ jobs:
       - name: Build ${{ matrix.arch }}
         run: |
           cd stubs
-          docker run --rm --platform ${{ matrix.platform }} -u $(id -u ${USER}):$(id -g ${USER}) -v "$PWD":/usr/src/myapp -w /usr/src/myapp ${{ matrix.arch }}/golang:1.16 go build -o ${{ matrix.output }} stub.go
+          docker run --rm --platform ${{ matrix.platform }} -v "$PWD":/usr/src/myapp -w /usr/src/myapp ${{ matrix.arch }}/golang:1.16 go build -o ${{ matrix.output }} stub.go
+          chown $(id -u ${USER}):$(id -g ${USER}) ${{ matrix.output }}
           echo >> ${{ matrix.output }} 
           echo '### CAXA ###' >> ${{ matrix.output }}
 
