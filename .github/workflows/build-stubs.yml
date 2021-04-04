@@ -54,38 +54,29 @@ jobs:
         platform: [linux/arm/v7, linux/arm64/v8]
         include:
           - platform: linux/arm/v7
-            arch: armv7
+            arch: arm32v7
             output: linux-armv7
           - platform: linux/arm64/v8
-            arch: arm64
+            arch: arm64v8
             output: linux-arm64
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Set up QEMU
-        id: qemu
-        uses: docker/setup-qemu-action@v1
-        with:
-          platforms: ${{ matrix.platform }}
-
-      - name: Available platforms
-        run: echo ${{ steps.qemu.outputs.platforms }}
-
-      - name: Set up Docker Buildx
-        id: buildx
-        uses: docker/setup-buildx-action@v1
-
+      - name: Enable Docker Experimental Features
+        run: |
+          echo $'{\n  "experimental": true\n}' | sudo tee /etc/docker/daemon.json
+          mkdir -p ~/.docker
+          echo $'{\n  "experimental": "enabled"\n}' | sudo tee ~/.docker/config.json
+          sudo service docker restart
+          docker version -f '{{.Client.Experimental}}'
+          docker version -f '{{.Server.Experimental}}'
+  
       - name: Build ${{ matrix.arch }}
         run: |
           cd stubs
-          docker buildx build -f arm-compile.Dockerfile \
-            --platform ${{ matrix.platform }} \
-            --build-arg OUTPUT=${{ matrix.output }} \
-            --load -t stub:${{ matrix.arch }} .
-          APP=$(docker run --rm -it -d stub:${{ matrix.arch }})
-          docker cp $APP:/usr/src/build/${{ matrix.output }} ./
-          docker kill $APP
+          docker run --rm --platform ${{ matrix.platform }} -v "$PWD":/usr/src/myapp -w /usr/src/myapp ${{ matrix.arch }}/golang:1.16 go build -o ${{ matrix.output }} stub.go
+          echo >> ${{ matrix.output }} && echo '### CAXA ###' >> ${{ matrix.output }}
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v2
