@@ -81,10 +81,10 @@ jobs:
       - name: Build ${{ matrix.arch }}
         run: |
           cd stubs
-          docker run --rm --platform ${{ matrix.platform }} -v "$PWD":/usr/src/myapp -w /usr/src/myapp ${{ matrix.arch }}/golang:1.16 go build -o ${{ matrix.output }} stub.go
-          chown $(id -u ${USER}):$(id -g ${USER}) ${{ matrix.output }}
-          echo >> ${{ matrix.output }} 
-          echo '### CAXA ###' >> ${{ matrix.output }}
+          docker run --rm --platform ${{ matrix.platform }} -v "$PWD":/usr/src/myapp -w /usr/src/myapp ${{ matrix.arch }}/golang:1.16 sh -c  "go build -o ${{ matrix.output }} stub.go && echo >> ${{ matrix.output }} && echo '### CAXA ###' >> ${{ matrix.output }}""
+          # chown $(id -u ${USER}):$(id -g ${USER}) ${{ matrix.output }}
+          # echo >> ${{ matrix.output }} 
+          # echo '### CAXA ###' >> ${{ matrix.output }}
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v2
