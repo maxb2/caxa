@@ -108,6 +108,24 @@ jobs:
           cd stubs
           docker run --rm --platform ${{ matrix.platform }} -v "$PWD":/usr/src/myapp -w /usr/src/myapp ${{ matrix.arch }}/golang:1.16 sh -c  "go build -o ${{ matrix.output }} stub.go && echo >> ${{ matrix.output }} && echo '### CAXA ###' >> ${{ matrix.output }}"
 
+      - name: Test binary # Do a really simple smoke test of the stub binary
+        id: test
+        run: |
+          cd stubs/
+          cp ${{ matrix.output }} ${{ matrix.testbin }}
+          echo 'success' > test.txt
+          tar -czf - test.txt >> ${{ matrix.testbin }}
+          printf "\n{ \"identifier\": \"${{ matrix.testbin }}/temp\", \"command\": [\"cat\", \"{{caxa}}/test.txt\"] }" >> ${{ matrix.testbin }}
+          RESULT=$(docker run --rm --platform ${{ matrix.platform }} -v "$PWD":/usr/src/myapp -w /usr/src/myapp ${{ matrix.arch }}/golang:1.16 sh -c  "./${{ matrix.testbin }} 2>&1")
+          echo "RESULT=$RESULT" >> $GITHUB_ENV
+          [ $RESULT = 'success' ] || exit 1
+
+      - name: Test Results
+        if: failure()
+        run: |
+          echo "${{ matrix.os }} binary test failed:"
+          echo ${{ env.RESULT }}
+
       - name: Upload artifacts
         uses: actions/upload-artifact@v2
         with:
