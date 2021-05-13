@@ -57,6 +57,8 @@ jobs:
 
       - name: Test Result
         if: env.RESULT == 'success'
+        run: |
+          echo "Test Succeeded!"
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v2
