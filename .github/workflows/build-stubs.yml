@@ -9,6 +9,7 @@ on:
 defaults:
   run:
     shell: bash
+    working-directory: stubs
 
 jobs:
   build_x64_native:
@@ -42,7 +43,7 @@ jobs:
       - name: Compile x64 binary
         id: compile
         run: |
-          cd stubs/
+          # cd stubs/
           go build -o ${{ matrix.output }} stub.go
           echo '' >> ${{ matrix.output }}
           echo '### CAXA ###' >> ${{ matrix.output }}
@@ -50,7 +51,7 @@ jobs:
       - name: Test binary # Do a really simple smoke test of the stub binary
         id: test
         run: |
-          cd stubs/
+          # cd stubs/
           cp ${{ matrix.output }} ${{ matrix.testbin }}
           echo 'success' > test.txt
           tar -czf - test.txt >> ${{ matrix.testbin }}
@@ -107,13 +108,13 @@ jobs:
   
       - name: Build ${{ matrix.arch }}
         run: |
-          cd stubs
+          # cd stubs
           docker run --rm --platform ${{ matrix.platform }} -v "$PWD":/usr/src/myapp -w /usr/src/myapp ${{ matrix.arch }}/golang:1.16 sh -c  "go build -o ${{ matrix.output }} stub.go && echo >> ${{ matrix.output }} && echo '### CAXA ###' >> ${{ matrix.output }}"
 
       - name: Test binary # Do a really simple smoke test of the stub binary
         id: test
         run: |
-          cd stubs/
+          # cd stubs/
           cp ${{ matrix.output }} ${{ matrix.testbin }}
           echo 'success' > test.txt
           tar -czf - test.txt >> ${{ matrix.testbin }}
@@ -149,7 +150,7 @@ jobs:
 
       - name: File Hashes
         run: |
-          cd stubs/
+          # cd stubs/
           md5sum * > md5sums.txt
           cat md5sums.txt
 
@@ -164,7 +165,7 @@ jobs:
             macos
             windows.exe
             md5sums.txt
-          fail_on_unmatched_files: true
+          # fail_on_unmatched_files: true
           draft: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
