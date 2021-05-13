@@ -147,6 +147,10 @@ jobs:
         with:
           path: .
 
+      - name: File Hashes
+        run: |
+          md5sum * > md5sums.txt
+
       - name: Create Release
         if: startsWith( github.ref, 'refs/tags/' ) # Run on tags only.
         id: create_release
@@ -161,6 +165,17 @@ jobs:
 
       # We have to upload assets individually using upload-release-asset@v1
       # There isn't a matrix for steps.
+      - name: Upload md5sums
+        if: startsWith( github.ref, 'refs/tags/' ) # Run on tags only.
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps
+          asset_path: ./stubs/md5sums.txt
+          asset_name: md5sums.txt
+          asset_content_type: text
+
       - name: Upload Linux Release
         if: startsWith( github.ref, 'refs/tags/' ) # Run on tags only.
         uses: actions/upload-release-asset@v1
