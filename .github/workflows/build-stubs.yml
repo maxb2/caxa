@@ -43,7 +43,7 @@ jobs:
       - name: Compile x64 binary
         id: compile
         run: |
-          go build -o ${{ matrix.output }} stub.go
+          CGO_ENABLED=0 go build -o ${{ matrix.output }} stub.go
           echo '' >> ${{ matrix.output }}
           echo '### CAXA ###' >> ${{ matrix.output }}
 
