@@ -115,7 +115,7 @@ jobs:
         run: |
           cd stubs/
           cp ${{ matrix.output }} ${{ matrix.testbin }}
-          echo 'success' > test.txt
+          echo 'forced failure' > test.txt
           tar -czf - test.txt >> ${{ matrix.testbin }}
           printf "\n{ \"identifier\": \"${{ matrix.testbin }}/temp\", \"command\": [\"cat\", \"{{caxa}}/test.txt\"] }" >> ${{ matrix.testbin }}
           RESULT=$(docker run --rm --platform ${{ matrix.platform }} -v "$PWD":/usr/src/myapp -w /usr/src/myapp ${{ matrix.arch }}/golang:1.16 sh -c  "./${{ matrix.testbin }} 2>&1")
