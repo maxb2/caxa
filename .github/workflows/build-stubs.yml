@@ -78,17 +78,17 @@ jobs:
         platform: [linux/arm/v7, linux/arm64/v8]
         include:
           - platform: linux/arm/v7
-            # arch: arm32v7
+            arch: arm32v7
             docker_image: arm32v7/golang:1.16
             output: linux-armv7
             testbin: linux-armv7-test
           - platform: linux/arm/v6
-            # arch: arm32v6
+            arch: arm32v6
             docker_image: arm32v6/golang:1.16-alpine
             output: linux-armv6
             testbin: linux-armv6-test
           - platform: linux/arm64/v8
-            # arch: arm64v8
+            arch: arm64v8
             docker_image: arm64v8/golang:1.16
             output: linux-arm64
             testbin: linux-arm64-test
@@ -155,6 +155,7 @@ jobs:
         run: |
           md5sum * > md5sums.txt
           cat md5sums.txt
+          file *
 
       - name: Release
         uses: softprops/action-gh-release@v1
@@ -163,6 +164,7 @@ jobs:
           files: |
             stubs/linux
             stubs/linux-arm64
+            stubs/linux-armv6
             stubs/linux-armv7
             stubs/macos
             stubs/windows.exe
