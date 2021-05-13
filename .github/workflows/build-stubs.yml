@@ -51,9 +51,12 @@ jobs:
           echo 'success' > test.txt
           tar -czf - test.txt >> ${{ matrix.testbin }}
           printf "\n{ \"identifier\": \"${{ matrix.testbin }}/temp\", \"command\": [\"cat\", \"{{caxa}}/test.txt\"] }" >> ${{ matrix.testbin }}
-          RESULT=$(./${{ matrix.testbin }})
-          echo $RESULT
-          [ $RESULT = 'success' ] || exit 1
+          # RESULT=$(./${{ matrix.testbin }})
+          echo "RESULT=$(./${{ matrix.testbin }})" >> $GITHUB_ENV
+          # [ $RESULT = 'success' ] || exit 1
+
+      - name: Test Result
+        if: env.RESULT == 'success'
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v2
