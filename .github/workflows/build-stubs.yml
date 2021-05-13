@@ -81,9 +81,11 @@ jobs:
           - platform: linux/arm/v7
             arch: arm32v7
             output: linux-armv7
+            testbin: linux-armv7-test
           - platform: linux/arm64/v8
             arch: arm64v8
             output: linux-arm64
+            testbin: linux-arm64-test
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
