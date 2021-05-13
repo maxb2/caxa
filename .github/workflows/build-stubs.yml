@@ -149,6 +149,7 @@ jobs:
 
       - name: File Hashes
         run: |
+          cd stubs/
           md5sum * > md5sums.txt
 
       - name: Create Release
