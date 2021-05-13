@@ -43,7 +43,6 @@ jobs:
       - name: Compile x64 binary
         id: compile
         run: |
-          # cd stubs/
           go build -o ${{ matrix.output }} stub.go
           echo '' >> ${{ matrix.output }}
           echo '### CAXA ###' >> ${{ matrix.output }}
@@ -51,7 +50,6 @@ jobs:
       - name: Test binary # Do a really simple smoke test of the stub binary
         id: test
         run: |
-          # cd stubs/
           cp ${{ matrix.output }} ${{ matrix.testbin }}
           echo 'success' > test.txt
           tar -czf - test.txt >> ${{ matrix.testbin }}
@@ -108,13 +106,11 @@ jobs:
   
       - name: Build ${{ matrix.arch }}
         run: |
-          # cd stubs
           docker run --rm --platform ${{ matrix.platform }} -v "$PWD":/usr/src/myapp -w /usr/src/myapp ${{ matrix.arch }}/golang:1.16 sh -c  "go build -o ${{ matrix.output }} stub.go && echo >> ${{ matrix.output }} && echo '### CAXA ###' >> ${{ matrix.output }}"
 
       - name: Test binary # Do a really simple smoke test of the stub binary
         id: test
         run: |
-          # cd stubs/
           cp ${{ matrix.output }} ${{ matrix.testbin }}
           echo 'success' > test.txt
           tar -czf - test.txt >> ${{ matrix.testbin }}
@@ -150,7 +146,6 @@ jobs:
 
       - name: File Hashes
         run: |
-          # cd stubs/
           md5sum * > md5sums.txt
           cat md5sums.txt
 
@@ -159,93 +154,12 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/')
         with:
           files: |
-            linux
-            linux-arm64
-            linux-armv7
-            macos
-            windows.exe
-            md5sums.txt
-          # fail_on_unmatched_files: true
+            stubs/linux
+            stubs/linux-arm64
+            stubs/linux-armv7
+            stubs/macos
+            stubs/windows.exe
+            stubs/md5sums.txt
           draft: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      # - name: Create Release
-      #   if: startsWith( github.ref, 'refs/tags/' ) # Run on tags only.
-      #   id: create_release
-      #   uses: actions/create-release@v1
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      #   with:
-      #     tag_name: ${{ github.ref }}
-      #     release_name: Release ${{ github.ref }}
-      #     draft: true
-      #     prerelease: false
-
-      # # We have to upload assets individually using upload-release-asset@v1
-      # # There isn't a matrix for steps.
-      # - name: Upload md5sums
-      #   if: startsWith( github.ref, 'refs/tags/' ) # Run on tags only.
-      #   uses: actions/upload-release-asset@v1
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      #   with:
-      #     upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps
-      #     asset_path: ./stubs/md5sums.txt
-      #     asset_name: md5sums.txt
-      #     asset_content_type: text
-
-      # - name: Upload Linux Release
-      #   if: startsWith( github.ref, 'refs/tags/' ) # Run on tags only.
-      #   uses: actions/upload-release-asset@v1
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      #   with:
-      #     upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps
-      #     asset_path: ./stubs/linux
-      #     asset_name: linux
-      #     asset_content_type: application/zip
-
-      # - name: Upload MacOS Release
-      #   if: startsWith( github.ref, 'refs/tags/' ) # Run on tags only.
-      #   uses: actions/upload-release-asset@v1
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      #   with:
-      #     upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps
-      #     asset_path: ./stubs/macos
-      #     asset_name: macos
-      #     asset_content_type: application/zip
-
-      # - name: Upload Windows Release
-      #   if: startsWith( github.ref, 'refs/tags/' ) # Run on tags only.
-      #   uses: actions/upload-release-asset@v1
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      #   with:
-      #     upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps
-      #     asset_path: ./stubs/windows.exe
-      #     asset_name: windows.exe
-      #     asset_content_type: application/zip
-
-      # - name: Upload Linux armv7 Release
-      #   if: startsWith( github.ref, 'refs/tags/' ) # Run on tags only.
-      #   uses: actions/upload-release-asset@v1
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      #   with:
-      #     upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps
-      #     asset_path: ./stubs/linux-armv7
-      #     asset_name: linux-armv7
-      #     asset_content_type: application/zip
-
-      # - name: Upload Linux arm64 Release
-      #   if: startsWith( github.ref, 'refs/tags/' ) # Run on tags only.
-      #   uses: actions/upload-release-asset@v1
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      #   with:
-      #     upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps
-      #     asset_path: ./stubs/linux-arm64
-      #     asset_name: linux-arm64
-      #     asset_content_type: application/zip
