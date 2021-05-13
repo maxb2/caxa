@@ -6,6 +6,10 @@ on:
     tags:
       - "v*"
 
+defaults:
+  run:
+    shell: bash
+
 jobs:
   build_x64_native:
     name: ${{ matrix.os }} Binaries
@@ -17,12 +21,15 @@ jobs:
           - os: ubuntu
             runner: ubuntu-20.04
             output: linux
+            testbin: linux-test
           - os: macos
             runner: macos-latest
             output: macos
+            testbin: macos-test
           - os: windows
             runner: windows-latest
             output: windows.exe
+            testbin: windows-test.exe
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -40,6 +47,24 @@ jobs:
           echo '' >> ${{ matrix.output }}
           echo '### CAXA ###' >> ${{ matrix.output }}
 
+      - name: Test binary # Do a really simple smoke test of the stub binary
+        id: test
+        run: |
+          cd stubs/
+          cp ${{ matrix.output }} ${{ matrix.testbin }}
+          echo 'success' > test.txt
+          tar -czf - test.txt >> ${{ matrix.testbin }}
+          printf "\n{ \"identifier\": \"${{ matrix.testbin }}/temp\", \"command\": [\"cat\", \"{{caxa}}/test.txt\"] }" >> ${{ matrix.testbin }}
+          RESULT=$(./${{ matrix.testbin }} 2>&1)
+          echo "RESULT=$RESULT" >> $GITHUB_ENV
+          [ "$RESULT" = 'success' ] || exit 1
+
+      - name: Test Results
+        if: failure()
+        run: |
+          echo "${{ matrix.os }} binary test failed:"
+          echo ${{ env.RESULT }}
+
       - name: Upload artifacts
         uses: actions/upload-artifact@v2
         with:
@@ -56,9 +81,11 @@ jobs:
           - platform: linux/arm/v7
             arch: arm32v7
             output: linux-armv7
+            testbin: linux-armv7-test
           - platform: linux/arm64/v8
             arch: arm64v8
             output: linux-arm64
+            testbin: linux-arm64-test
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -82,6 +109,24 @@ jobs:
         run: |
           cd stubs
           docker run --rm --platform ${{ matrix.platform }} -v "$PWD":/usr/src/myapp -w /usr/src/myapp ${{ matrix.arch }}/golang:1.16 sh -c  "go build -o ${{ matrix.output }} stub.go && echo >> ${{ matrix.output }} && echo '### CAXA ###' >> ${{ matrix.output }}"
+
+      - name: Test binary # Do a really simple smoke test of the stub binary
+        id: test
+        run: |
+          cd stubs/
+          cp ${{ matrix.output }} ${{ matrix.testbin }}
+          echo 'success' > test.txt
+          tar -czf - test.txt >> ${{ matrix.testbin }}
+          printf "\n{ \"identifier\": \"${{ matrix.testbin }}/temp\", \"command\": [\"cat\", \"{{caxa}}/test.txt\"] }" >> ${{ matrix.testbin }}
+          RESULT=$(docker run --rm --platform ${{ matrix.platform }} -v "$PWD":/usr/src/myapp -w /usr/src/myapp ${{ matrix.arch }}/golang:1.16 sh -c  "./${{ matrix.testbin }} 2>&1")
+          echo "RESULT=$RESULT" >> $GITHUB_ENV
+          [ "$RESULT" = 'success' ] || exit 1
+
+      - name: Test Results
+        if: failure()
+        run: |
+          echo "${{ matrix.os }} binary test failed:"
+          echo ${{ env.RESULT }}
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v2
