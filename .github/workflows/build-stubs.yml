@@ -81,6 +81,10 @@ jobs:
             arch: arm32v7
             output: linux-armv7
             testbin: linux-armv7-test
+          - platform: linux/arm/v6
+            arch: arm32v6
+            output: linux-armv6
+            testbin: linux-armv6-test
           - platform: linux/arm64/v8
             arch: arm64v8
             output: linux-arm64
