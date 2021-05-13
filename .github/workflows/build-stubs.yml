@@ -57,7 +57,7 @@ jobs:
           printf "\n{ \"identifier\": \"${{ matrix.testbin }}/temp\", \"command\": [\"cat\", \"{{caxa}}/test.txt\"] }" >> ${{ matrix.testbin }}
           RESULT=$(./${{ matrix.testbin }} 2>&1)
           echo "RESULT=$RESULT" >> $GITHUB_ENV
-          [ $RESULT = 'success' ] || exit 1
+          [ "$RESULT" = 'success' ] || exit 1
 
       - name: Test Results
         if: failure()
@@ -120,7 +120,7 @@ jobs:
           printf "\n{ \"identifier\": \"${{ matrix.testbin }}/temp\", \"command\": [\"cat\", \"{{caxa}}/test.txt\"] }" >> ${{ matrix.testbin }}
           RESULT=$(docker run --rm --platform ${{ matrix.platform }} -v "$PWD":/usr/src/myapp -w /usr/src/myapp ${{ matrix.arch }}/golang:1.16 sh -c  "./${{ matrix.testbin }} 2>&1")
           echo "RESULT=$RESULT" >> $GITHUB_ENV
-          [ $RESULT = 'success' ] || exit 1
+          [ "$RESULT" = 'success' ] || exit 1
 
       - name: Test Results
         if: failure()
