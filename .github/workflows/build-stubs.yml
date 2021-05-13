@@ -52,11 +52,10 @@ jobs:
         run: |
           cd stubs/
           cp ${{ matrix.output }} ${{ matrix.testbin }}
-          echo 'success' > test.txt
+          echo 'fail' > test.txt
           tar -czf - test.txt >> ${{ matrix.testbin }}
           printf "\n{ \"identifier\": \"${{ matrix.testbin }}/temp\", \"command\": [\"cat\", \"{{caxa}}/test.txt\"] }" >> ${{ matrix.testbin }}
           RESULT=$(./${{ matrix.testbin }})
-          # echo "RESULT=$(./${{ matrix.testbin }})" >> $GITHUB_ENV
           [ $RESULT = 'success' ] || exit 1
 
       - name: Upload artifacts
