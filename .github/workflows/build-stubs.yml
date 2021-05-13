@@ -52,7 +52,7 @@ jobs:
         run: |
           cd stubs/
           cp ${{ matrix.output }} ${{ matrix.testbin }}
-          echo 'forced failure' > test.txt
+          echo 'success' > test.txt
           tar -czf - test.txt >> ${{ matrix.testbin }}
           printf "\n{ \"identifier\": \"${{ matrix.testbin }}/temp\", \"command\": [\"cat\", \"{{caxa}}/test.txt\"] }" >> ${{ matrix.testbin }}
           RESULT=$(./${{ matrix.testbin }} 2>&1)
