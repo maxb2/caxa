@@ -17,12 +17,15 @@ jobs:
           - os: ubuntu
             runner: ubuntu-20.04
             output: linux
+            testbin: linux-test
           - os: macos
             runner: macos-latest
             output: macos
+            testbin: macos-test
           - os: windows
             runner: windows-latest
             output: windows.exe
+            testbin: windows-test.exe
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -39,6 +42,18 @@ jobs:
           go build -o ${{ matrix.output }} stub.go
           echo '' >> ${{ matrix.output }}
           echo '### CAXA ###' >> ${{ matrix.output }}
+
+      - name: Test binary # Do a really simple smoke test of the stub binary
+        id: test
+        run: |
+          cd stubs/
+          cp ${{ matrix.output }} ${{ matrix.testbin }}
+          echo 'success' > test.txt
+          tar -czf - test.txt >> ${{ matrix.testbin }}
+          printf "\n{ \"identifier\": \"${{ matrix.testbin }}/temp\", \"command\": [\"cat\", \"{{caxa}}/test.txt\"] }" >> ${{ matrix.testbin }}
+          RESULT=$(./${{ matrix.testbin }})
+          echo $RESULT
+          [ $RESULT = 'success' ] || exit 1
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v2
