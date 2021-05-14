@@ -133,6 +133,7 @@ jobs:
           echo 'success' > test.txt
           tar -czf - test.txt >> ${{ matrix.testbin }}
           printf "\n{ \"identifier\": \"${{ matrix.testbin }}/temp\", \"command\": [\"cat\", \"{{caxa}}/test.txt\"] }" >> ${{ matrix.testbin }}
+          docker pull ${{ matrix.docker_image }}
           RESULT=$(docker run --rm -v "$PWD":/usr/src/myapp -w /usr/src/myapp ${{ matrix.docker_image }} sh -c  "./${{ matrix.testbin }} 2>&1")
           echo "RESULT=$RESULT" >> $GITHUB_ENV
           [ "$RESULT" = 'success' ] || exit 1
