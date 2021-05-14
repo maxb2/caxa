@@ -1,0 +1,168 @@
+name: Build Binaries
+
+on:
+  push:
+    branches: [master] # Run on master or tags
+    tags:
+      - "v*"
+
+defaults:
+  run:
+    shell: bash
+    working-directory: stubs
+
+jobs:
+  build:
+    name: Build Binaries
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Setup Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: '~1.16.2'
+
+      - name: Compile binaries
+        id: compile
+        run: |
+          BIN=windows.exe; CGO_ENABLED=0 GOOS=windows go build -o $BIN stub.go && echo >> $BIN && echo "### CAXA ###" >> $BIN
+          BIN=macos;       CGO_ENABLED=0 GOOS=darwin  go build -o $BIN stub.go && echo >> $BIN && echo "### CAXA ###" >> $BIN
+          BIN=linux;       CGO_ENABLED=0 GOOS=linux   go build -o $BIN stub.go && echo >> $BIN && echo "### CAXA ###" >> $BIN
+          BIN=linux-armv6; CGO_ENABLED=0 GOOS=linux GOARCH=arm GOARM=6 go build -o $BIN stub.go && echo >> $BIN && echo "### CAXA ###" >> $BIN
+          BIN=linux-armv7; CGO_ENABLED=0 GOOS=linux GOARCH=arm GOARM=7 go build -o $BIN stub.go && echo >> $BIN && echo "### CAXA ###" >> $BIN
+          BIN=linux-arm64; CGO_ENABLED=0 GOOS=linux GOARCH=arm64       go build -o $BIN stub.go && echo >> $BIN && echo "### CAXA ###" >> $BIN
+          chmod +x macos linux linux-armv6 linux-armv7 linux-arm64
+          rm stub.go
+          md5sum * > md5sums.txt
+          cat md5sums.txt
+          file *
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: stubs
+          path: "stubs/*"
+
+  test_x64_native:
+    name: Test ${{ matrix.os }} Binaries
+    needs: build
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      matrix:
+        os: [ubuntu, macos, windows]
+        include:
+          - os: ubuntu
+            runner: ubuntu-20.04
+            testbin: linux
+          - os: macos
+            runner: macos-latest
+            testbin: macos
+          - os: windows
+            runner: windows-latest
+            testbin: windows.exe
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Download Artifacts
+        uses: actions/download-artifact@v2
+        with:
+          path: ./
+
+      - name: Test binary # Do a really simple smoke test of the stub binary
+        id: test
+        run: |
+          echo 'success' > test.txt
+          chmod +x ${{ matrix.testbin }}
+          tar -czf - test.txt >> ${{ matrix.testbin }}
+          printf "\n{ \"identifier\": \"${{ matrix.testbin }}/temp\", \"command\": [\"cat\", \"{{caxa}}/test.txt\"] }" >> ${{ matrix.testbin }}
+          RESULT=$(./${{ matrix.testbin }} 2>&1)
+          echo "RESULT=$RESULT" >> $GITHUB_ENV
+          [ "$RESULT" = 'success' ] || exit 1
+
+      - name: Test Results
+        if: failure()
+        run: |
+          echo "${{ matrix.os }} binary test failed:"
+          echo ${{ env.RESULT }}
+
+  test_arm:
+    name: Test ${{ matrix.platform }} Binaries
+    needs: build
+    runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        platform: [linux/arm/v6, linux/arm/v7, linux/arm64/v8]
+        include:
+          - platform: linux/arm/v6
+            testbin: linux-armv6
+            docker_image: balenalib/raspberry-pi:run
+          - platform: linux/arm/v7
+            testbin: linux-armv7
+            docker_image: balenalib/raspberrypi3:run
+          - platform: linux/arm64/v8
+            testbin: linux-arm64
+            docker_image: balenalib/raspberrypi4-64:run
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Download Artifacts
+        uses: actions/download-artifact@v2
+        with:
+          path: ./
+
+      - name: Set up QEMU
+        id: qemu
+        uses: docker/setup-qemu-action@v1
+        with:
+          platforms: all
+  
+      - name: Test binary # Do a really simple smoke test of the stub binary
+        id: test
+        run: |
+          echo 'success' > test.txt
+          chmod +x ${{ matrix.testbin }}
+          tar -czf - test.txt >> ${{ matrix.testbin }}
+          printf "\n{ \"identifier\": \"${{ matrix.testbin }}/temp\", \"command\": [\"cat\", \"{{caxa}}/test.txt\"] }" >> ${{ matrix.testbin }}
+          docker pull ${{ matrix.docker_image }}
+          RESULT=$(docker run --rm -v "$PWD":/usr/src/myapp -w /usr/src/myapp ${{ matrix.docker_image }} /bin/bash -c  "./${{ matrix.testbin }} 2>&1")
+          echo "RESULT=$RESULT" >> $GITHUB_ENV
+          [ "$RESULT" = 'success' ] || exit 1
+
+      - name: Test Results
+        if: failure()
+        run: |
+          echo "${{ matrix.platform }} binary test failed:"
+          echo ${{ env.RESULT }}
+
+  job_upload:
+    name: Upload Release Assets
+    needs: [test_x64_native, test_arm]
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Download Artifacts
+        uses: actions/download-artifact@v2
+        with:
+          path: ./
+
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: |
+            stubs/linux
+            stubs/linux-arm64
+            stubs/linux-armv6
+            stubs/linux-armv7
+            stubs/macos
+            stubs/windows.exe
+            stubs/md5sums.txt
+          draft: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
