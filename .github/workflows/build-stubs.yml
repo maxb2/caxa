@@ -12,25 +12,10 @@ defaults:
     working-directory: stubs
 
 jobs:
-  build_x64_native:
-    name: ${{ matrix.os }} Binaries
-    runs-on: ${{ matrix.runner }}
-    strategy:
-      matrix:
-        os: [ubuntu, macos, windows]
-        include:
-          - os: ubuntu
-            runner: ubuntu-20.04
-            output: linux
-            testbin: linux-test
-          - os: macos
-            runner: macos-latest
-            output: macos
-            testbin: macos-test
-          - os: windows
-            runner: windows-latest
-            output: windows.exe
-            testbin: windows-test.exe
+
+  build:
+    name: Build Binaries
+    runs-on: ubuntu-20.04
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -40,17 +25,51 @@ jobs:
         with:
           go-version: '~1.16.2'
 
-      - name: Compile x64 binary
+      - name: Compile binaries
         id: compile
         run: |
-          CGO_ENABLED=0 go build -o ${{ matrix.output }} stub.go
-          echo '' >> ${{ matrix.output }}
-          echo '### CAXA ###' >> ${{ matrix.output }}
+          BIN=windows.exe; CGO_ENABLED=0 GOOS=windows go build -o $BIN stub.go && echo >> $BIN && echo "### CAXA ###" >> $BIN
+          BIN=macos;       CGO_ENABLED=0 GOOS=darwin  go build -o $BIN stub.go && echo >> $BIN && echo "### CAXA ###" >> $BIN
+          BIN=linux;       CGO_ENABLED=0 GOOS=linux   go build -o $BIN stub.go && echo >> $BIN && echo "### CAXA ###" >> $BIN
+          BIN=linux-armv6; CGO_ENABLED=0 GOOS=linux GOARCH=arm GOARM=6 go build -o $BIN stub.go && echo >> $BIN && echo "### CAXA ###" >> $BIN
+          BIN=linux-armv7; CGO_ENABLED=0 GOOS=linux GOARCH=arm GOARM=7 go build -o $BIN stub.go && echo >> $BIN && echo "### CAXA ###" >> $BIN
+          BIN=linux-arm64; CGO_ENABLED=0 GOOS=linux GOARCH=arm64       go build -o $BIN stub.go && echo >> $BIN && echo "### CAXA ###" >> $BIN
+          md5sum * > md5sums.txt
+          cat md5sums.txt
+          file *
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: stubs
+          path: "stubs/*"
+
+  test_x64_native:
+    name: ${{ matrix.os }} Binaries
+    runs-on: ${{ matrix.runner }}
+    needs: build
+    strategy:
+      matrix:
+        os: [ubuntu, macos, windows]
+        include:
+          - os: ubuntu
+            runner: ubuntu-20.04
+            testbin: linux
+          - os: macos
+            runner: macos-latest
+            testbin: macos
+          - os: windows
+            runner: windows-latest
+            testbin: windows.exe
+    steps:
+      - name: Download Artifacts
+        uses: actions/download-artifact@v2
+        with:
+          path: .
 
       - name: Test binary # Do a really simple smoke test of the stub binary
         id: test
         run: |
-          cp ${{ matrix.output }} ${{ matrix.testbin }}
           echo 'success' > test.txt
           tar -czf - test.txt >> ${{ matrix.testbin }}
           printf "\n{ \"identifier\": \"${{ matrix.testbin }}/temp\", \"command\": [\"cat\", \"{{caxa}}/test.txt\"] }" >> ${{ matrix.testbin }}
@@ -64,30 +83,27 @@ jobs:
           echo "${{ matrix.os }} binary test failed:"
           echo ${{ env.RESULT }}
 
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v2
-        with:
-          name: stubs
-          path: "stubs/${{ matrix.output }}"
-
-  build_arm:
+  test_arm:
     name: ${{ matrix.arch }} Binaries
     runs-on: ubuntu-20.04
     strategy:
       matrix:
-        platform: [linux/arm/v7, linux/arm64/v8]
+        platform: [linux/arm/v7, linux/arm/v7, linux/arm64/v8]
         include:
+          - platform: linux/arm/v6
+            testbin: linux-armv6
+            docker_image: balenalib/raspberry-pi:run
           - platform: linux/arm/v7
-            arch: arm32v7
-            output: linux-armv7
-            testbin: linux-armv7-test
+            testbin: linux-armv7
+            docker_image: balenalib/raspberrypi3:run
           - platform: linux/arm64/v8
-            arch: arm64v8
-            output: linux-arm64
-            testbin: linux-arm64-test
+            testbin: linux-arm64
+            docker_image: balenalib/raspberrypi4-64:run
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
+      - name: Download Artifacts
+        uses: actions/download-artifact@v2
+        with:
+          path: .
 
       - name: Set up QEMU
         id: qemu
@@ -104,51 +120,31 @@ jobs:
           docker version -f '{{.Client.Experimental}}'
           docker version -f '{{.Server.Experimental}}'
   
-      - name: Build ${{ matrix.arch }}
-        run: |
-          docker run --rm --platform ${{ matrix.platform }} -v "$PWD":/usr/src/myapp -w /usr/src/myapp ${{ matrix.arch }}/golang:1.16 sh -c  "CGO_ENABLED=0 go build -o ${{ matrix.output }} stub.go && echo >> ${{ matrix.output }} && echo '### CAXA ###' >> ${{ matrix.output }}"
-
       - name: Test binary # Do a really simple smoke test of the stub binary
         id: test
         run: |
-          cp ${{ matrix.output }} ${{ matrix.testbin }}
           echo 'success' > test.txt
           tar -czf - test.txt >> ${{ matrix.testbin }}
           printf "\n{ \"identifier\": \"${{ matrix.testbin }}/temp\", \"command\": [\"cat\", \"{{caxa}}/test.txt\"] }" >> ${{ matrix.testbin }}
-          RESULT=$(docker run --rm --platform ${{ matrix.platform }} -v "$PWD":/usr/src/myapp -w /usr/src/myapp ${{ matrix.arch }}/golang:1.16 sh -c  "./${{ matrix.testbin }} 2>&1")
+          RESULT=$(docker run --rm --platform ${{ matrix.platform }} -v "$PWD":/usr/src/myapp -w /usr/src/myapp ${{ matrix.docker_image }} sh -c  "./${{ matrix.testbin }} 2>&1")
           echo "RESULT=$RESULT" >> $GITHUB_ENV
           [ "$RESULT" = 'success' ] || exit 1
 
       - name: Test Results
         if: failure()
         run: |
-          echo "${{ matrix.arch }} binary test failed:"
+          echo "${{ matrix.platform }} binary test failed:"
           echo ${{ env.RESULT }}
-
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v2
-        with:
-          name: stubs
-          path: "stubs/${{ matrix.output }}"
 
   job_upload:
     name: Upload Release Assets
-    needs: [build_x64_native, build_arm]
+    needs: [test_x64_native, test_arm]
     runs-on: ubuntu-20.04
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-
       - name: Download Artifacts
         uses: actions/download-artifact@v2
         with:
           path: .
-
-      - name: File Hashes
-        run: |
-          md5sum * > md5sums.txt
-          cat md5sums.txt
-          file *
 
       - name: Release
         uses: softprops/action-gh-release@v1
@@ -157,6 +153,7 @@ jobs:
           files: |
             stubs/linux
             stubs/linux-arm64
+            stubs/linux-armv6
             stubs/linux-armv7
             stubs/macos
             stubs/windows.exe
