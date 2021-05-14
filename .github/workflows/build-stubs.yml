@@ -76,6 +76,7 @@ jobs:
         id: test
         run: |
           echo 'success' > test.txt
+          chmod +x ${{ matrix.testbin }}
           tar -czf - test.txt >> ${{ matrix.testbin }}
           printf "\n{ \"identifier\": \"${{ matrix.testbin }}/temp\", \"command\": [\"cat\", \"{{caxa}}/test.txt\"] }" >> ${{ matrix.testbin }}
           RESULT=$(./${{ matrix.testbin }} 2>&1)
@@ -133,8 +134,8 @@ jobs:
         id: test
         run: |
           ls -al
-          ls -al ../
           echo 'success' > test.txt
+          chmod +x ${{ matrix.testbin }}
           tar -czf - test.txt >> ${{ matrix.testbin }}
           printf "\n{ \"identifier\": \"${{ matrix.testbin }}/temp\", \"command\": [\"cat\", \"{{caxa}}/test.txt\"] }" >> ${{ matrix.testbin }}
           docker pull ${{ matrix.docker_image }}
