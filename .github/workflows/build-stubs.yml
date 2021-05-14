@@ -45,7 +45,7 @@ jobs:
           path: "stubs/*"
 
   test_x64_native:
-    name: ${{ matrix.os }} Binaries
+    name: Test ${{ matrix.os }} Binaries
     needs: build
     runs-on: ${{ matrix.runner }}
     strategy:
@@ -87,7 +87,7 @@ jobs:
           echo ${{ env.RESULT }}
 
   test_arm:
-    name: ${{ matrix.arch }} Binaries
+    name: Test ${{ matrix.platform }} Binaries
     needs: build
     runs-on: ubuntu-20.04
     strategy:
@@ -133,7 +133,7 @@ jobs:
           echo 'success' > test.txt
           tar -czf - test.txt >> ${{ matrix.testbin }}
           printf "\n{ \"identifier\": \"${{ matrix.testbin }}/temp\", \"command\": [\"cat\", \"{{caxa}}/test.txt\"] }" >> ${{ matrix.testbin }}
-          RESULT=$(docker run --rm --platform ${{ matrix.platform }} -v "$PWD":/usr/src/myapp -w /usr/src/myapp ${{ matrix.docker_image }} sh -c  "./${{ matrix.testbin }} 2>&1")
+          RESULT=$(docker run --rm -v "$PWD":/usr/src/myapp -w /usr/src/myapp ${{ matrix.docker_image }} sh -c  "./${{ matrix.testbin }} 2>&1")
           echo "RESULT=$RESULT" >> $GITHUB_ENV
           [ "$RESULT" = 'success' ] || exit 1
 
