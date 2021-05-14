@@ -38,7 +38,6 @@ jobs:
           md5sum * > md5sums.txt
           cat md5sums.txt
           file *
-          ls -al
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v2
@@ -120,26 +119,15 @@ jobs:
         uses: docker/setup-qemu-action@v1
         with:
           platforms: all
-
-      - name: Enable Docker Experimental Features
-        run: |
-          echo $'{\n  "experimental": true\n}' | sudo tee /etc/docker/daemon.json
-          mkdir -p ~/.docker
-          echo $'{\n  "experimental": "enabled"\n}' | sudo tee ~/.docker/config.json
-          sudo service docker restart
-          docker version -f '{{.Client.Experimental}}'
-          docker version -f '{{.Server.Experimental}}'
   
       - name: Test binary # Do a really simple smoke test of the stub binary
         id: test
         run: |
-          ls -al
           echo 'success' > test.txt
           chmod +x ${{ matrix.testbin }}
           tar -czf - test.txt >> ${{ matrix.testbin }}
           printf "\n{ \"identifier\": \"${{ matrix.testbin }}/temp\", \"command\": [\"cat\", \"{{caxa}}/test.txt\"] }" >> ${{ matrix.testbin }}
           docker pull ${{ matrix.docker_image }}
-          echo "running test"
           RESULT=$(docker run --rm -v "$PWD":/usr/src/myapp -w /usr/src/myapp ${{ matrix.docker_image }} /bin/bash -c  "./${{ matrix.testbin }} 2>&1")
           echo "RESULT=$RESULT" >> $GITHUB_ENV
           [ "$RESULT" = 'success' ] || exit 1
