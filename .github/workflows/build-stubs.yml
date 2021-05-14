@@ -46,8 +46,8 @@ jobs:
 
   test_x64_native:
     name: ${{ matrix.os }} Binaries
-    runs-on: ${{ matrix.runner }}
     needs: build
+    runs-on: ${{ matrix.runner }}
     strategy:
       matrix:
         os: [ubuntu, macos, windows]
@@ -88,6 +88,7 @@ jobs:
 
   test_arm:
     name: ${{ matrix.arch }} Binaries
+    needs: build
     runs-on: ubuntu-20.04
     strategy:
       matrix:
@@ -149,7 +150,7 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
-        
+
       - name: Download Artifacts
         uses: actions/download-artifact@v2
         with:
