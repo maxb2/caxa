@@ -38,6 +38,7 @@ jobs:
           md5sum * > md5sums.txt
           cat md5sums.txt
           file *
+          ls -al
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v2
