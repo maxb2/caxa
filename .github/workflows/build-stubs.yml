@@ -130,6 +130,8 @@ jobs:
       - name: Test binary # Do a really simple smoke test of the stub binary
         id: test
         run: |
+          ls -al
+          ls -al ../
           echo 'success' > test.txt
           tar -czf - test.txt >> ${{ matrix.testbin }}
           printf "\n{ \"identifier\": \"${{ matrix.testbin }}/temp\", \"command\": [\"cat\", \"{{caxa}}/test.txt\"] }" >> ${{ matrix.testbin }}
