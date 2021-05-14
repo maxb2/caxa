@@ -43,7 +43,7 @@ jobs:
       - name: Compile x64 binary
         id: compile
         run: |
-          go build -o ${{ matrix.output }} stub.go
+          CGO_ENABLED=0 go build -o ${{ matrix.output }} stub.go
           echo '' >> ${{ matrix.output }}
           echo '### CAXA ###' >> ${{ matrix.output }}
 
@@ -106,7 +106,7 @@ jobs:
   
       - name: Build ${{ matrix.arch }}
         run: |
-          docker run --rm --platform ${{ matrix.platform }} -v "$PWD":/usr/src/myapp -w /usr/src/myapp ${{ matrix.arch }}/golang:1.16 sh -c  "go build -o ${{ matrix.output }} stub.go && echo >> ${{ matrix.output }} && echo '### CAXA ###' >> ${{ matrix.output }}"
+          docker run --rm --platform ${{ matrix.platform }} -v "$PWD":/usr/src/myapp -w /usr/src/myapp ${{ matrix.arch }}/golang:1.16 sh -c  "CGO_ENABLED=0 go build -o ${{ matrix.output }} stub.go && echo >> ${{ matrix.output }} && echo '### CAXA ###' >> ${{ matrix.output }}"
 
       - name: Test binary # Do a really simple smoke test of the stub binary
         id: test
