@@ -148,6 +148,7 @@ jobs:
         run: |
           md5sum * > md5sums.txt
           cat md5sums.txt
+          file *
 
       - name: Release
         uses: softprops/action-gh-release@v1
