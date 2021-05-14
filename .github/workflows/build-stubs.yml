@@ -92,7 +92,7 @@ jobs:
     runs-on: ubuntu-20.04
     strategy:
       matrix:
-        platform: [linux/arm/v7, linux/arm/v7, linux/arm64/v8]
+        platform: [linux/arm/v6, linux/arm/v7, linux/arm64/v8]
         include:
           - platform: linux/arm/v6
             testbin: linux-armv6
@@ -116,7 +116,7 @@ jobs:
         id: qemu
         uses: docker/setup-qemu-action@v1
         with:
-          platforms: ${{ matrix.platform }}
+          platforms: all
 
       - name: Enable Docker Experimental Features
         run: |
