@@ -68,7 +68,7 @@ jobs:
       - name: Download Artifacts
         uses: actions/download-artifact@v2
         with:
-          path: .
+          path: stubs/
 
       - name: Test binary # Do a really simple smoke test of the stub binary
         id: test
@@ -110,7 +110,7 @@ jobs:
       - name: Download Artifacts
         uses: actions/download-artifact@v2
         with:
-          path: .
+          path: stubs/
 
       - name: Set up QEMU
         id: qemu
