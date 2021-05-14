@@ -122,7 +122,7 @@ jobs:
       - name: Test Results
         if: failure()
         run: |
-          echo "${{ matrix.os }} binary test failed:"
+          echo "${{ matrix.arch }} binary test failed:"
           echo ${{ env.RESULT }}
 
       - name: Upload artifacts
