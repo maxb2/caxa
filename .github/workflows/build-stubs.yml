@@ -77,12 +77,15 @@ jobs:
         include:
           - platform: linux/arm/v6
             output: linux-armv6
+            testbin: linux-armv6-test
             docker_image: arm32v6/golang:1.16-alpine # There is only an alpine image for this architecture
           - platform: linux/arm/v7
-            testbin: linux-armv7
+            output: linux-armv7
+            testbin: linux-armv7-test
             docker_image: arm32v7/golang:1.16
           - platform: linux/arm64/v8
-            testbin: linux-arm64
+            output: linux-arm64
+            testbin: linux-arm64-test
             docker_image: arm64v8/golang:1.16
     steps:
       - name: Checkout code
