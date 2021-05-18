@@ -98,12 +98,10 @@ jobs:
           platforms: all
 
       - name: Build binary 
-        id: test
         run: |
           docker run --rm -it --platform ${{ matrix.platform }} -v $PWD:/usr/src/myapp -w /usr/src/myapp ${{ matrix.docker_image }}  /bin/bash -c 'CGO_ENABLED=0 go build -o ${{ matrix.output }} stub.go && echo "" >> ${{ matrix.output }} && echo "### CAXA ###" >> ${{ matrix.output }}'
 
       - name: Test binary # Do a really simple smoke test of the stub binary
-        id: test
         run: |
           echo 'success' > test.txt
           cp ${{ matrix.output }} ${{ matrix.testbin }}
