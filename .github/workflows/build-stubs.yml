@@ -15,7 +15,6 @@ jobs:
 
   build_x64_native:
     name: Build ${{ matrix.os }} Binaries
-    needs: build
     runs-on: ${{ matrix.runner }}
     strategy:
       matrix:
@@ -67,7 +66,6 @@ jobs:
 
   build_arm:
     name: Build ${{ matrix.platform }} Binaries
-    needs: build
     runs-on: ubuntu-20.04
     strategy:
       matrix:
