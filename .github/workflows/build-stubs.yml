@@ -36,6 +36,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
+      - uses: actions/setup-go@v2
+        with:
+          go-version: '^1.16' 
+
       - name: Build Binary
         run: |
           BIN=${{ matrix.output }}; CGO_ENABLED=0 go build -o $BIN stub.go && echo >> $BIN && echo "### CAXA ###" >> $BIN
